@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="kr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>Weather App</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            .navbar {
+                background-color: #1070e6;
+                overflow: hidden;
+            }
+            .navbar a {
+                float: left;
+                display: block;
+                color: white;
+                text-align: center;
+                padding: 14px 16px;
+                text-decoration: none;
+            }
+            .navbar a:hover{
+                background-color: #ddd;
+                color: black;
+            }
+            .container {
+                padding: 20px;
+            }
+
+            input {
+                width: 100%;
+                padding: 12px 20px;
+                margin: 8px 0;
+                box-sizing: border-box;
+                border: 2px solid #ccc;
+                border-radius: 10px;
+                background-color: #f9f9f9;
+            }
+            input:focus {
+                border: 2px solid #1070e6;
+                outline: none;
+            }
+            button {
+                background-color: #1070e6;
+                border: none;
+                color: white;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 12px;
+                box-shadow: 0px 4px 6px rgba(0,  0, 0, 0.1);
+                transition: background-color 0.3s ease;
+            }
+            button:hover {
+                background-color: #0b5ebd;
+            }
+
+            @media (max-width: 600px) {
+                .navbar a {
+                    float: none;
+                    width: 100%;
+                }
+            }
+
+            .card {
+                background-color: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0,  0, 0, 0.1);
+                padding: 20px;
+                margin: 10px;
+                flex: 1 1 calc(20% - 20px);
+                box-sizing: border-box;
+                text-align: center;
+            }
+            
+            .card h3 {
+                margin: 0;
+                padding: 0;
+                font-size: 1.2em;
+                color: #1070e6;
+            }
+
+            .card p {
+                margin: 5px 0;
+            }
+
+            .forecast-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+        </style>
+    </head>
+    <body onload="load_Page('Weather')">
+        <div class="navbar">
+            <a href="#" onclick="load_Page('home')">Home</a>
+            <a href="#" onclick="load_Page('Weather')">Weather</a>
+            <a href="#" onclick="load_Page('About')">About</a>
+        </div>
+        <div class="container" id="content">
+
+        </div>
+        <script>
+            function load_Page(page) {
+                const container = document.getElementById('content');
+                switch (page) {
+                    case 'home':
+                        container.innerHTML = `
+                            <h1>Home</h1>
+                            <p>안녕하세요 !</p>
+                            <p>날씨 웹입니다. 도시명을 입력하면 해당 도시의 날씨와 온도가 간략하게 나옵니다.
+                                아직은 미소하지만 앞으로 점차 기능을 하나하나 추가해나가고자 합니다.</p>
+                        `;
+                        break;
+                    case 'Weather':
+                        container.innerHTML = `
+                            <h1>Weather Forecast</h1>
+                            <input type="text" id="city_Input" placeholder="도시명을 입력하세요">
+                            <button onclick="search_City_Weather()">검색</button>
+                            <div id="weather_Result"></div>
+                        `;
+                        break;
+                    case 'About':
+                        container.innerHTML =`
+                        <h1>About</h1>
+                        <p>해당 페이지는 앱에 대한 추가 정보나 개발자 정보가 제공될 것입니다. </p>
+                        `;
+                        break;
+                    default:
+                        container.innerHTML = '<h1>404 Page Not Found</h1>';
+                }
+            }
+            //날씨 API 키와 URL
+            const weather_Api_Key = 'dd65ec728ec409d514af1cb41abd51a4';
+            const weather_Api_Url = 'https://api.openweathermap.org/data/2.5/forecast';
+
+            //번역 API 키와 URL
+            const translate_Api_Key = '4c3d1ccd194ca4431f28';
+            const translate_Api_Url = 'https://api.mymemory.translated.net/get'
+            // https에서 사용 가능한 기능이라 잠시 주석처리함.
+            // 사용자의 현재 위치를 가져오는 함수
+            // function getCurrentLocation() {
+            //     if (navigator.geolocation) {
+            //         navigator.geolocation.getCurrentPosition(position => {
+            //             const {latitude, longitude} = position.coords;
+            //             getWeatherData(latitude, longitude);
+            //         }, error => {
+            //             console.error('Error getting location', error);
+            //             alert('위치 정보를 가져오는데 실패했습니다. 브라우저 설정을 확인해주세요.');
+            //         });
+            //         } else {
+            //             alert('현재 브라우저에서는 지리적 위치가 지원되지 않습니다.');
+            //         }
+            //     }
+
+            // 사용자의 현재 위치의 날씨 데이터를 가져오는 함수
+            // function getWeatherData(lat, lon) {
+            //     const url = `${weatherApiUrl}?lat=${lat}&lon=${lon}&appid=${weatherApiKey}&units=metric`;
+
+            //     fetch(url)
+            //         .then(response => response.json())
+            //         .then(data => displayWeatherData(data))
+            //         .catch(error => console.error('날씨 데이터 패치 오류', error));
+            // }
+
+            // 입력된 도시 이름이 한글일 때 영어로 번역해주는 함수
+            async function translate_City_Name(city_Name) {
+                const url = `${translate_Api_Url}?q=${encodeURIComponent(city_Name)}&langpair=ko|en`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.responseData.translatedText;
+            }
+
+             //API를 통해 받은 날씨 데이터의 이름이 영어일 때 한글로 바꿔주는 함수
+             async function translate_Weather_Data_Name(Weather_Data_Name) {
+                const url = `${translate_Api_Url}?q=${encodeURIComponent(Weather_Data_Name)}&langpair=en|ko`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.responseData.translatedText;
+             }
+
+            //입력된 도시 이름이 한글인지 확인하는 함수
+            function isKorean(city_Name) {
+                const koreanRegex = /[\u3131-\uD79D]/ugi;
+                return koreanRegex.test(city_Name);
+            }
+
+            // 입력된 도시 이름으로 날씨 데이터를 가져오는 함수
+            async function search_City_Weather() {
+                let city_Name = document.getElementById('city_Input').value;
+                if(!city_Name) {
+                    alert('도시명을 입력하세요.');
+                    return;
+                }
+
+                //get 요청 보낼 때 영어인 입력값을 보내야하기 때문에 한글로 입력된 도시 이름을 영어로 번역해야함.
+                if(isKorean(city_Name)) {
+                    city_Name = await translate_City_Name(city_Name);
+                } 
+
+                const url = `${weather_Api_Url}?q=${city_Name}&appid=${weather_Api_Key}&units=metric&lang=kr`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(weather_Data => display_Weather_Data(weather_Data))
+                    .catch(error => {
+                        console.error('날씨 데이터 패치 오류', error)
+                        alert('날씨 데이터 패치에 실패하였습니다. 다시 시도해주세요.');
+                    });
+
+            }
+
+            // 날씨 데이터를 화면에 표시하는 함수
+            async function display_Weather_Data(weather_Data) {
+                const weather_Container = document.getElementById('weather_Result');
+                const city_Name = weather_Data.city.name;
+                const translated_City_Name = await translate_Weather_Data_Name(city_Name);
+
+                const forecast_List = weather_Data.list.slice(0, 5).map(item => {
+                    const date = new Date(item.dt * 1000).toLocaleDateString();
+                    const temp = item.main.temp;
+                    const description = item.weather[0].description;
+                    return `<div class="card"><h3>${date}</h3><p>${description}</p><p>기온 : ${temp}°C</p></div>`;
+                }).join('');
+
+                weather_Container.innerHTML = `
+                    <h2>${translated_City_Name} 5일 간의 일기예보</h2>
+                    <div class="forecast-container">${forecast_List}</div>
+                `;
+            }
+
+            // line 33과 동일한 이유임
+            //페이지 로드 시 현재 위치의 날씨 데이터를 가져옴
+            // window.onload = getCurrentLocation;         
+        </script>
+    </body>
+</html>
